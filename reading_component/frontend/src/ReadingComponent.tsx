@@ -7,33 +7,31 @@ import React, { useEffect, useState, ReactElement, useRef } from "react"
 import "./styles.css"
 
 function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
-    const { audio_src } = args;
-    const { words } = args;
+    const { audioSrc } = args;
+    const { storyText } = args;
+    const { wordsMetadata } = args;
     const { storyTitle } = args;
-    const { language } = args;
+    const { wordsAudio } = args;
     const [currentWordIndex, setCurrentWordIndex] = useState(-1);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
     useEffect(() => {
         Streamlit.setFrameHeight()
-    }, [theme, words]);
+    }, [theme, wordsMetadata]);
+
+    const CLEAN_WORD = (word: string) => {
+        return word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+    };
 
     const speakWord = (word: any, index: any) => {
-        if ("speechSynthesis" in window) {
-            var playbackSpeed = 1.0;
-            const audio = audioRef.current;
-            if(audio) {
-                playbackSpeed = audio.playbackRate;
-            }
-            const utterance = new SpeechSynthesisUtterance(word);
-            utterance.rate = playbackSpeed;
-            utterance.lang = language;
-            setCurrentWordIndex(index);
-            speechSynthesis.speak(utterance);
-        } else {
-            alert("Speech synthesis not supported in this browser.");
-        }
+        const mainAudio = audioRef.current;
+        mainAudio?.pause();
+
+        setCurrentWordIndex(index);
+        console.log('Speaking word:', word['text']);
+        const audio = new Audio(wordsAudio[CLEAN_WORD(word['text'])])
+        audio.play().catch((error) => console.error('Error playing audio:', error));
     };
 
     useEffect(() => {
@@ -43,12 +41,19 @@ function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
         }
         const handleTimeUpdate = () => {
             const currentTime = audio.currentTime;
-            const wordCount = words.length;
-            const timePerWord = audio.duration / wordCount;
-            const newIndex = Math.floor(currentTime / timePerWord);
+            // find currentTime in the wordsMetadata array
+            for (let i = 0; i < wordsMetadata.length; i++) {
+                if (currentTime >= wordsMetadata[i]['start'] && currentTime <= wordsMetadata[i]['end']) {
+                    setCurrentWordIndex(i);
+                    return;
+                }
+            }
+            // const wordCount = wordsMetadata.length;
+            // const timePerWord = audio.duration / wordCount;
+            // const newIndex = Math.floor(currentTime / timePerWord);
 
-            const clampedIndex = Math.min(newIndex, wordCount - 1);
-            setCurrentWordIndex(clampedIndex);
+            // const clampedIndex = Math.min(newIndex, wordCount - 1);
+            // setCurrentWordIndex(clampedIndex);
         };
 
         audio.addEventListener("timeupdate", handleTimeUpdate);
@@ -57,26 +62,26 @@ function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
             audio.removeEventListener("timeupdate", handleTimeUpdate);
         };
 
-    }, [words.length]);
+    }, [wordsMetadata.length]);
 
     return (
         <div>
             <h3>{storyTitle}</h3>
             <div className="scrollable-content">
-            {words.map((word: any, index: any) => (
+            {wordsMetadata.map((word: any, index: any) => (
                 <span
                     key={index}
                     className={index === currentWordIndex ? "word highlight" : "word no-highlight"}
                     onClick={() => speakWord(word, index)}
                 >
-                    {word}
+                    {word['text']}
                 </span>
                 ))}
             </div>
 
             <div className="audio-wrapper">
                 <audio ref={audioRef} controls className="audio-player">
-                    <source src={audio_src} type="audio/mp3" />
+                    <source src={audioSrc} type="audio/mp3" />
                     Your browser does not support the audio element.
                 </audio>
             </div>

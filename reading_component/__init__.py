@@ -13,6 +13,12 @@ else:
     build_dir = os.path.join(parent_dir, "frontend/build")
     _component_func = components.declare_component("reading_component", path=build_dir)
 
-def reading_component(audio_src, words, story_title, language='en-US', key=None):
-    component_value = _component_func(audio_src=audio_src, words=words, storyTitle=story_title, language=language, key=key)
+def reading_component(audio_src, story_text, words_metadata, words_audio, story_title, key=None):
+    component_value = _component_func(
+        audioSrc=audio_src, 
+        storyText=story_text,
+        wordsMetadata=words_metadata, 
+        wordsAudio=words_audio, 
+        storyTitle=story_title, 
+        key=key)
     return component_value
