@@ -5,6 +5,7 @@ import os
 import re
 import json
 import string
+import shutil
 from constants import *
 
 MODEL = whisper.load_model(WHISPER_MODEL)
@@ -77,27 +78,55 @@ def save_lines_metadata(directory_path, detected_data, title, lang_code):
 # build the UI
 if st.button("Start reading"):
     st.switch_page(page="reading.py")
-st.title("Add a Story")
-lang = st.selectbox("Select Language", LANG_MAP.keys())
-title = st.text_input("Enter Story Title")
-text = st.text_area("Enter Story content")
-with st.spinner("Adding Story..."):
-    if st.button("Add Story"):
-        if not title.strip() or not text.strip():
-            st.error("Title and Content cannot be empty!")
-        elif contains_invalid_chars(title):
-            st.error("Title contains invalid characters. Please remove them and try again.")
-        else:
-            directory_path = create_dir(lang, title)
-            status, msg = save_text(title, text, lang, directory_path)
-            if(status):
-                audio_filepath = save_audio(title, text, LANG_MAP[lang], directory_path)
-                if(lang in WHISPER_LANGS):
-                    detected_data = get_data_from_whisper(directory_path, LANG_MAP[lang])
-                    save_words_metadata(directory_path, detected_data, text, title, LANG_MAP[lang])
-                    save_lines_metadata(directory_path, detected_data, title, LANG_MAP[lang])
-                save_words_audio(text, LANG_MAP[lang], directory_path)
-                st.success(msg)
-            else:
-                st.error(msg)
 
+
+add_story_tab, del_story_tab = st.tabs(["Add Story", "Delete Story"])
+
+# Add story tab
+with add_story_tab:
+    st.title("Add a Story")
+    lang = st.selectbox("Select Language", LANG_MAP.keys())
+    title = st.text_input("Enter Story Title")
+    text = st.text_area("Enter Story content")
+    with st.spinner("Adding Story..."):
+        if st.button("Add Story"):
+            if not title.strip() or not text.strip():
+                st.error("Title and Content cannot be empty!")
+            elif contains_invalid_chars(title):
+                st.error("Title contains invalid characters. Please remove them and try again.")
+            else:
+                directory_path = create_dir(lang, title)
+                status, msg = save_text(title, text, lang, directory_path)
+                if(status):
+                    audio_filepath = save_audio(title, text, LANG_MAP[lang], directory_path)
+                    if(lang in WHISPER_LANGS):
+                        detected_data = get_data_from_whisper(directory_path, LANG_MAP[lang])
+                        save_words_metadata(directory_path, detected_data, text, title, LANG_MAP[lang])
+                        save_lines_metadata(directory_path, detected_data, title, LANG_MAP[lang])
+                    save_words_audio(text, LANG_MAP[lang], directory_path)
+                    st.success(msg)
+                else:
+                    st.error(msg)
+
+# Delete story tab
+with del_story_tab:
+    if os.path.exists(RESOURCES_DIR):
+        langs = [d for d in os.listdir(RESOURCES_DIR) if os.path.isdir(os.path.join(RESOURCES_DIR, d))]
+
+        if langs:
+            for lang in langs:
+                st.header(lang)
+                lang_path = os.path.join(RESOURCES_DIR, lang)
+                stories = [d for d in os.listdir(os.path.join(RESOURCES_DIR, lang)) 
+                    if d != VOCAB_DIRECTORY]
+
+                for story in stories:
+                    story_path = os.path.join(lang_path, story)
+                    if st.button(f"Delete {story}", key=story):
+                        # Delete the directory and refresh the list
+                        try:
+                            shutil.rmtree(story_path)
+                            st.success(f"Deleted '{story}'")
+                            st.rerun()  # Refresh the app to show updated list
+                        except Exception as e:
+                            st.error(f"Error deleting '{story}': {str(e)}")
