@@ -6,7 +6,7 @@ LANG_MAP = {
     "Hindi": "hi",
     "Tamil": "ta"
 }
-SUPPORT_LARGE_MODEL = True
+SUPPORT_LARGE_MODEL = False
 WHISPER_MODEL = "large" if SUPPORT_LARGE_MODEL else "base"
 WHISPER_LANGS = LANG_MAP.keys() if SUPPORT_LARGE_MODEL else ["English"]
 RESOURCES_DIR = "resources"
