@@ -21,7 +21,7 @@ function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
     }, [theme, wordsMetadata]);
 
     const CLEAN_WORD = (word: string) => {
-        return word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+        return word.toLowerCase().replace(/^[!"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]+|[!"#$%&'()*+,\-./:;<=>?@[\]^_`{|}~]+$/g, ""); // this is the same punctuation list from python's string.punctuation
     };
 
     const speakWord = (word: any, index: any) => {

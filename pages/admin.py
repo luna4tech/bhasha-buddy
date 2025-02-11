@@ -29,6 +29,7 @@ def save_text(title, text, lang, directory_path):
         return True, f"Story '{title}' added successfully in {lang}!"
 
 def save_audio(title, text, lang_code, directory_path):
+    print("Text: ", text)
     filepath = os.path.join(directory_path, AUDIO_FILE_NAME)
     tts = gTTS(text=text, lang=lang_code)
     tts.save(filepath)
@@ -46,7 +47,7 @@ def save_words_audio(text, lang_code, lang_directory_path):
 def get_data_from_whisper(directory_path, lang_code):
     audio_filepath = os.path.join(directory_path, AUDIO_FILE_NAME)
     audio = whisper.load_audio(audio_filepath)
-    return whisper.transcribe(MODEL, audio, language=lang_code)
+    return whisper.transcribe(MODEL, audio, language=lang_code[0:2])
 
 # save list of words from the audio to json file
 # word format: {'start': 0.0, 'end': 0.3, 'text': 'The'}
@@ -75,12 +76,25 @@ def save_lines_metadata(directory_path, detected_data, title, lang_code):
     with open(json_filepath, "w") as f:
         json.dump(lines, f, indent=4)
 
+def generate_story_files(lang, title, text):
+    directory_path = create_dir(lang, title)
+    status, msg = save_text(title, text, lang, directory_path)
+    if(status):
+        audio_filepath = save_audio(title, text, LANG_MAP[lang], directory_path)
+        if(lang in WHISPER_LANGS):
+            detected_data = get_data_from_whisper(directory_path, LANG_MAP[lang])
+            save_words_metadata(directory_path, detected_data, text, title, LANG_MAP[lang])
+            save_lines_metadata(directory_path, detected_data, title, LANG_MAP[lang])
+        save_words_audio(text, LANG_MAP[lang], directory_path)
+        return True, msg
+    else:
+        return False, msg
+
 # build the UI
 if st.button("Start reading"):
     st.switch_page(page="reading.py")
 
-
-add_story_tab, del_story_tab = st.tabs(["Add Story", "Delete Story"])
+add_story_tab, add_from_local, del_story_tab = st.tabs(["Add Story", "Generate Story", "Delete Story"])
 
 # Add story tab
 with add_story_tab:
@@ -95,21 +109,32 @@ with add_story_tab:
             elif contains_invalid_chars(title):
                 st.error("Title contains invalid characters. Please remove them and try again.")
             else:
-                directory_path = create_dir(lang, title)
-                status, msg = save_text(title, text, lang, directory_path)
+                status, msg = generate_story_files(lang, title, content)
                 if(status):
-                    audio_filepath = save_audio(title, text, LANG_MAP[lang], directory_path)
-                    if(lang in WHISPER_LANGS):
-                        detected_data = get_data_from_whisper(directory_path, LANG_MAP[lang])
-                        save_words_metadata(directory_path, detected_data, text, title, LANG_MAP[lang])
-                        save_lines_metadata(directory_path, detected_data, title, LANG_MAP[lang])
-                    save_words_audio(text, LANG_MAP[lang], directory_path)
                     st.success(msg)
                 else:
                     st.error(msg)
 
+# Add existing stories from local folder
+with add_from_local:
+    pw = st.text_input("Enter password to generate stories")
+    if pw == 'password':
+        with st.spinner("Generating stories..."):
+            for lang in LANG_MAP.keys():
+                with open(os.path.join(STORIES_DIR, f"{lang}.json"), 'r') as f:
+                    stories_list = json.load(f)
+                    for title in stories_list.keys():
+                        content = stories_list[title]
+                        status, msg = generate_story_files(lang, title, content)
+                        if(status):
+                            st.success(msg)
+                        else:
+                            st.error(msg)
+
 # Delete story tab
 with del_story_tab:
+    pw = st.text_input("Enter password to delete")
+    allow_delete = pw == 'password'
     if os.path.exists(RESOURCES_DIR):
         langs = [d for d in os.listdir(RESOURCES_DIR) if os.path.isdir(os.path.join(RESOURCES_DIR, d))]
 
@@ -122,7 +147,7 @@ with del_story_tab:
 
                 for story in stories:
                     story_path = os.path.join(lang_path, story)
-                    if st.button(f"Delete {story}", key=story):
+                    if st.button(f"Delete {story}", key=story, disabled=not allow_delete):
                         # Delete the directory and refresh the list
                         try:
                             shutil.rmtree(story_path)
