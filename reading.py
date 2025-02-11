@@ -31,10 +31,12 @@ def get_approx_words_split(audio_filepath, text):
     return words_split
 
 # build the UI
-st.title("Read your stories")
 if st.button("Create story"):
     st.switch_page(page="pages/admin.py")
-languages = os.listdir(RESOURCES_DIR)
+
+st.title("Read your stories")
+languages = [d for d in os.listdir(RESOURCES_DIR) 
+                if d in LANG_MAP.keys()]
 language = st.selectbox('Select Language', languages)
 if(language):
     stories = [d for d in os.listdir(os.path.join(RESOURCES_DIR, language)) 
