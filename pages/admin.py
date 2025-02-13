@@ -109,7 +109,7 @@ with add_story_tab:
             elif contains_invalid_chars(title):
                 st.error("Title contains invalid characters. Please remove them and try again.")
             else:
-                status, msg = generate_story_files(lang, title, content)
+                status, msg = generate_story_files(lang, title, text)
                 if(status):
                     st.success(msg)
                 else:
