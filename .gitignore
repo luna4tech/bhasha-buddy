@@ -1,3 +1,4 @@
 .venv/
 reading_component/frontend/node_modules/
 resources/
+trials/frontend/node_modules
