@@ -8,10 +8,12 @@ import "./styles.css"
 
 function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
     const { audioSrc } = args;
-    const { storyText } = args;
+    const { storyTextSplit } = args;
     const { wordsMetadata } = args;
     const { storyTitle } = args;
     const { wordsAudio } = args;
+    const { currentSpokenWordIndex } = args;
+    const { isSpokenCorrect } = args;
     const [currentWordIndex, setCurrentWordIndex] = useState(-1);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -32,6 +34,22 @@ function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
         console.log('Speaking word:', word['text']);
         const audio = new Audio(wordsAudio[CLEAN_WORD(word['text'])])
         audio.play().catch((error) => console.error('Error playing audio:', error));
+    };
+
+    const getClassName = (index: any) => {
+        let className = "word";
+      
+        if (index === currentWordIndex) {
+          className += " highlight";
+        }
+        if (index <= currentSpokenWordIndex) {
+            className += " green";
+        }
+        if (index === currentSpokenWordIndex + 1) {
+          className += isSpokenCorrect ? " yellow" : " red";
+        }
+      
+        return className;
     };
 
     useEffect(() => {
@@ -71,10 +89,10 @@ function ReadingComponent({ args, theme }: ComponentProps): ReactElement {
             {wordsMetadata.map((word: any, index: any) => (
                 <span
                     key={index}
-                    className={index === currentWordIndex ? "word highlight" : "word no-highlight"}
+                    className={getClassName(index)}
                     onClick={() => speakWord(word, index)}
                 >
-                    {word['text']}
+                    {storyTextSplit[index]}
                 </span>
                 ))}
             </div>

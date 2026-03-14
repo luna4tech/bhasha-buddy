@@ -11,6 +11,18 @@
     background-color: transparent;
 }
 
+.green {
+    background-color: #d7ff00;
+}
+
+.yellow {
+    background-color: bisque;
+}
+
+.red {
+    background-color: red;
+}
+
 .word {
     padding: 2px 4px;
     margin: 2px;

@@ -1,7 +1,7 @@
 import os
 import streamlit.components.v1 as components
 
-_RELEASE = True
+_RELEASE = False
 
 if not _RELEASE:
     _component_func = components.declare_component(
@@ -13,12 +13,14 @@ else:
     build_dir = os.path.join(parent_dir, "frontend/build")
     _component_func = components.declare_component("reading_component", path=build_dir)
 
-def reading_component(audio_src, story_text, words_metadata, words_audio, story_title, key=None):
+def reading_component(audio_src, story_text_split, words_metadata, words_audio, story_title, index, is_correct, key=None):
     component_value = _component_func(
         audioSrc=audio_src, 
-        storyText=story_text,
+        storyTextSplit=story_text_split,
         wordsMetadata=words_metadata, 
         wordsAudio=words_audio, 
         storyTitle=story_title, 
+        currentSpokenWordIndex = index,
+        isSpokenCorrect = is_correct,
         key=key)
     return component_value
